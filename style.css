@@ -192,3 +192,26 @@ a:hover
 {
 	border-color: #d97c10;
 }
+
+/*new*/
+.download_box
+{
+	margin-top: 12px;
+	text-align: center;
+}
+
+.download_btn
+{
+	display: inline-block;
+	padding: 8px 14px;
+	background: #d97c10;
+	color: #ffffff;
+	border: 1px solid #8f4f05;
+	text-decoration: none;
+	font-weight: bold;
+}
+
+.download_btn:hover
+{
+	background: #ea9322;
+}
