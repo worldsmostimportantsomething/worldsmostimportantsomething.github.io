@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>World's Most Important Something</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="container">
+	<div id="header">
+		<div id="logo">
+			<h1>World's Most Important Something</h1>
+			<p>(WMIS)</p>
+		</div>
+	</div>
+
+	<div id="navbar">
+		<a href="index.html">Home</a>
+		<a href="software.html">Software</a>
+	</div>
+
+	<div id="content_full">
+
+	<div class="content_box">
+			<!-- mtrax -->
+		<h2>Mitrax</h2>
+		<div class="thumbs">
+			<a href="fullresmitrax1.png">
+				<img src="fullresmitrax1.png" alt="" width="200">
+			</a>
+
+			<a href="fullresmitrax2.png">
+				<img src="fullresmitrax2.png" alt="" width="200">
+			</a>
+
+			<a href="fullresmitrax3.png">
+				<img src="fullresmitrax3.png" alt="" width="200">
+			</a>
+		</div>
+			<!-- oil -->
+		<h2>Oil (OSL or OILSL)</h2>
+			<pre><code>
+shader {
+	$compile glsl=140;
+
+	$compile hlsl=2;
+	$compile hlsl=3;
+
+	$shader_spec oil_version = 100;
+
+	vertex {
+		$spec row_vector;
+		$spec name lighting_vertex;
+
+		d3d_c0 float[4x4] world_view_proj;
+		d3d_c4 float[4x4] world;
+
+		struct OIL_VS_IN
+		{
+			float[4] pos;
+			float[3] normal;
+			float[4] tangent;
+			float[2] uv;
+		}
+		struct OIL_VS_OUT
+		{
+			float[4] pos;
+			float[3] world_pos;
+			float[3] normal;
+			float[4] tangent;
+			float[2] uv;
+		}
+
+		OIL_VS_OUT main( OIL_VS_IN i, OIL_SPEC spec )
+		{
+			OIL_VS_OUT o;
+
+			float[4] wp4 = i.pos * world;
+
+			o.pos = i.pos * world_view_proj;
+			o.world_pos = wp4.xyz;
+			o.normal = ( i.normal * (float[3x3])world ).normalize();
+			o.tangent = float4( ( (i.tangent.xyz * (float[3x3])world).normalize() ), i.tangent.w );
+			o.uv = float2( 1f - i.uv.x, i.uv.y );
+
+			return o;
+		}
+	}
+
+	fragment {
+		$spec row_vector;
+		$spec name lighting_fragment;
+
+		d3d_c0 float[4] ambient_color;
+		d3d_c1 float[4] num_lights_pad;
+		d3d_c2 float[4] light_pos[8];
+		d3d_c10 float[4] light_color[8];
+		d3d_c18 float[4] light_atten[8];
+		d3d_c30 float[4] render_methods;
+
+		d3d_s0 sampler2D diffuse_sampler;
+		d3d_s1 sampler2D emissive_sampler;
+		d3d_s2 sampler2D bump_sampler;
+
+		struct OIL_PS_IN
+		{
+			float[3] world_pos;
+			float[3] normal;
+			float[4] tangent;
+			float[2] uv;
+		}
+
+		float[3] get_world_normal( OIL_PS_IN i, OIL_SPEC spec )
+		{
+			float[3] n = i.normal.normalize();
+			if( render_methods.y < 0.5f )
+			{
+				return n;
+			}
+
+			float[3] t = i.tangent.xyz.normalize();
+			float[3] b = ( n.cross( t ) * i.tangent.w ).normalize();
+			float[3x3] tbn = float[3x3]( t, b, n );
+
+			float[3] bump_n = tex2D( bump_sampler, i.uv ).xyz * 2.0f - 1.0f;
+			return ( bump_n * tbn ).normalize();
+		}
+
+		float[4] main( OIL_PS_IN i, OIL_SPEC spec )
+		{
+			float[4] diffuse = tex2D( diffuse_sampler, i.uv );
+			float[3] n = get_world_normal( i, spec );
+			float[4] lit = ambient_color;
+
+			int num_lights = (int)num_lights_pad.x;
+			for( int light_i = 0; light_i < num_lights; light_i++ )
+			{
+				float[3] lvec = light_pos[light_i].xyz - i.world_pos;
+				float dist2 = lvec.dot( lvec );
+				float range = light_atten[light_i].w;
+				float range2 = range * range;
+
+				if( dist2 < range2 )
+				{
+					float dist = dist2.sqrt();
+					float[3] l = lvec / max( dist, 0.0001f );
+
+					float atten = 1.0f / (
+						light_atten[light_i].x +
+						light_atten[light_i].y * dist +
+						light_atten[light_i].z * dist * dist
+					);
+
+					atten *= saturate( 1.0f - dist / range );
+					lit += light_color[light_i] * ( saturate( n.dot( l ) ) * atten );
+				}
+			}
+
+			float[4] final_color = diffuse * lit;
+			if( render_methods.x == 1 )
+			{
+				final_color += tex2D( emissive_sampler, i.uv );
+			}
+
+			final_color.a = diffuse.a;
+			return saturate( final_color );
+		}
+	}
+}
+
+			</code></pre>
+	</div>
+
+	<div id="footer">
+		World's Most Important Something (WMIS) © 2026
+	</div>
+
+</div>
+
+</body>
+</html>
